@@ -1,78 +1,166 @@
-## Описание приложения 
+## Overview
 
-SPA на TypeScript с кастомным роутером: HTML-шаблоны из client/src/markups, компоненты и сервисы собираются webpack’ом; состояние хранится в localStorage.
-Back-end: Express на Node.js, JWT (один общий секрет), данные в in-memory TAFFY-коллекциях (server/data/*.json), без персистентности.
-Функционал: регистрация/логин, настройка дефолтных категорий, CRUD по операциям/балансу, аналитика с Chart.js (динамическая подгрузка скрипта), фильтрация и datepicker.
+This project is a single-page application built with TypeScript and a custom client-side router.  
+The application includes user authentication, transaction management, balance calculation, and basic analytics.
 
-Клиент
+The project is split into a client and a server part and is intended as a learning / test assignment.  
+Data is stored in memory only and is not persisted between server restarts.
 
-Router (client/src/router.ts) управляет history API, подгружает шаблоны fetch’ем, скрывает navbar для гостя, но не инициализирует Auth.navigateToPath и оставляет бесполезный Auth.processUnauthorizedResponse.bind(this).
-Сервисы: Auth хранит токены и умеет рефрешить (client/src/services/auth.ts), Http централизует fetch c повтором после 401, DefaultCategoriesManager логинит и создаёт категории при первом входе, Filter (client/src/services/filter.ts) фильтрует операции и отдаёт данные в аналитику.
-Компоненты: формы входа/регистрации (наследуют UserManager), таблицы операций/категорий (через BaseOperations), создание/редактирование транзакций, аналитика (client/src/components/analytics.ts) c Chart.js и кастомным Unselect.
+---
 
-Сервер
+## Architecture
 
-Основные роуты (server/app.js): /api/login|signup|refresh|logout, /api/categories/{expense|income}, /api/operations, /api/balance; авторизация через MiddlewareUtils.validateUser.
-Контроллеры выполняют минимальные проверки и работают с TAFFY-моделями; баланс пересчитывается при CRUD операций (server/controllers/operation.controller.js).
-Токены выпускаются TokenUtils одним секретом и сроком 15 мин / 1 или 30 дней, refresh токен хранится в памяти (server/utils/token.utils.js).
-Тесты
+The application follows a simple client–server architecture.
 
-Покрытие минимальное: unit-тест формы регистрации (client/__tests__/components/signup.test.ts), заготовки под e2e (Playwright) и MSW-моки.
+- Client: SPA with a custom router, rendered via HTML templates and JavaScript.
+- Server: REST API built with Express and JWT-based authentication.
+- State: stored on the client in `localStorage`.
+- Data storage: in-memory TAFFY collections without persistence.
 
-## Основные пользовательские сценарии
+---
 
-Зарегистрироваться впервые: перейти на /signup, заполнить ФИО, почту и пароль, подтвердить регистрацию и сразу оказаться в приложении с готовыми категориями.
+## Client
 
-Войти повторно: открыть /login, ввести почту и пароль (при желании включить «Запомнить меня»), попасть в личный кабинет.
+The client is built with TypeScript and bundled using Webpack.
 
-Посмотреть баланс и транзакции: на вкладке «Транзакции» увидеть текущий баланс и список всех операций в виде таблицы.
+HTML templates are located in `client/src/markups`. Components and services are assembled during the build process, and routing is handled on the client side.
 
-Отфильтровать операции по периоду: на странице транзакций выбрать «Сегодня», «Неделя», «Месяц», «Год», «Все» или задать интервал дат и посмотреть обновлённый список.
+### Router
 
-Создать новую операцию: нажать «Добавить доход» или «Добавить расход», заполнить форму (тип, категория, сумма, дата, комментарий), сохранить и вернуться к списку.
+The router (`client/src/router.ts`) works with the History API and loads page templates using `fetch`.  
+It hides the navigation bar for guest users. At the same time, it does not initialize `Auth.navigateToPath` and contains an unused `Auth.processUnauthorizedResponse.bind(this)`.
 
-Отредактировать существующую операцию: нажать на значок карандаша в строке нужной операции, изменить поля и сохранить изменения.
+### Services
 
-Удалить операцию: нажать на значок корзины, подтвердить удаление в модальном окне и увидеть, что запись пропала, а баланс пересчитан.
+- `Auth` (`client/src/services/auth.ts`)  
+  Stores access and refresh tokens and handles token refresh.
+- `Http`  
+  Centralizes all `fetch` calls and retries requests after a 401 response.
+- `DefaultCategoriesManager`  
+  Automatically creates default categories on the user’s first login.
+- `Filter` (`client/src/services/filter.ts`)  
+  Filters transactions and prepares data for analytics.
 
-Управлять категориями (из форм создания/редактирования): открыть список категорий, выбрать подходящую либо создать новую (если раздел для категорий активен), чтобы использовать её в операции.
+### Components
 
-Посмотреть аналитику: перейти на вкладку «Аналитика», увидеть круговые диаграммы расходов и доходов по категориям и переключать период теми же фильтрами.
+- Login and registration forms (inherit from `UserManager`)
+- Tables for transactions and categories (based on `BaseOperations`)
+- Transaction creation and editing forms
+- Analytics component (`client/src/components/analytics.ts`) built with Chart.js and a custom `Unselect` component
 
-Выйти из аккаунта: кликнуть по имени в шапке, выбрать «Выйти» и вернуться на страницу авторизации.
+---
 
-## Техническое задание
+## Server
 
-Этап 1 
-Верстка всех страниц (+ ошибочные состояния полей)
-Итог этапа: все страницы выглядят в соответствии с макетом, имеют адаптивную версию.
+The server is built with Express and runs on Node.js.
 
-Этап 2
-Полный функционал авторизации и регистрации (страницы полностью рабочие)
-Каркас веб-приложения с ядром (для страниц кроме логина/регистрации открывается только сверстанная страница)
-Итог этапа: Работает функционал авторизации и регистрации, все остальные страницы открываются только в сверстанном виде без реализованного функционала внутри.
+### API Routes
 
-2 этап включает в себя:
-1. Реализацию функционала для страниц авторизации и регистрации. На этих страницах пользователь входит в систему либо регистрируется. При наличии ошибок заполнения формы, они показываются при нажатии на кнопку, а сами поля меняют цвет рамки на красный цвет. Функционал авторизации реализуется стандартными средствами обмена токенов (как в проекте с Quiz) и для этого вы должны использовать спецификацию по запросам из yaml файла. Помните о том, что для начала вам нужно понять, как это работает, попробовать логику работы в postman на запросах, а затем - реализовывать в вашем проекте.
+Main routes are defined in `server/app.js`:
 
-2. Реализация каркаса приложения и ядра (роутера). Вам необходимо реализовать основное ядро приложения, которое будет решать, какая страница открыта и что необходимо показать пользователю. Если неавторизованный пользователь пытается открыть любую страницу, кроме регистрации или авторизации - его перебрасывает на авторизацию. После авторизации пользователя пускает на любую страницу (кроме регистрации). Все страницы, кроме авторизации и регистрации, должны открываться через ядро, то есть отрисовка нужной страницы происходит именно за счет использования механизма роутинга в приложении, а не просто открытия html-файла в браузере.
+- `/api/login`, `/api/signup`, `/api/refresh`, `/api/logout`
+- `/api/categories/{expense|income}`
+- `/api/operations`
+- `/api/balance`
 
-Этап 3
-Завершенная работа до конца
-Итог этапа: полностью готовая работа согласно дизайн-макету и техническому заданию
+Authorization is handled via `MiddlewareUtils.validateUser`.
 
-Этот этап включает в себя реализацию всего оставшегося функционала проекта согласно ТЗ, дизайн-макету, спецификации.
+### Controllers and Data
 
-## Запуск проекта
+Controllers perform basic validation and work with TAFFY models.  
+The balance is recalculated on every transaction CRUD operation (`server/controllers/operation.controller.js`).
 
-1. Запустить сервер:
-   - `cd server`
-   - `npm install`
-   - `npm start`
+### Authentication
 
-2. Запустить клиент:
-   - `cd client`
-   - `npm install`
-   - `npm run dev`
+Tokens are issued by `TokenUtils` using a single shared secret.
 
-Сервер слушает `http://localhost:3000`, клиент по умолчанию доступен на `http://localhost:8080` (webpack-dev-server).
+- Access token lifetime: 15 minutes
+- Refresh token lifetime: 1 or 30 days
+- Refresh tokens are stored in memory (`server/utils/token.utils.js`)
+
+---
+
+## Tests
+
+Test coverage is minimal.
+
+- One unit test for the signup form (`client/__tests__/components/signup.test.ts`)
+- Placeholders for end-to-end tests (Playwright)
+- MSW mocks for API stubbing
+
+---
+
+## User Scenarios
+
+First-time registration:  
+The user navigates to `/signup`, enters full name, email, and password, confirms registration, and immediately enters the application with default categories already created.
+
+Returning login:  
+The user opens `/login`, enters email and password (optionally enabling “Remember me”), and accesses the personal dashboard.
+
+View balance and transactions:  
+On the “Transactions” page, the user sees the current balance and a table with all transactions.
+
+Filter transactions by period:  
+The user can filter transactions by predefined periods (“Today”, “Week”, “Month”, “Year”, “All”) or by a custom date range.
+
+Create a transaction:  
+The user adds an income or expense, fills in the form, saves it, and returns to the list.
+
+Edit or delete a transaction:  
+Existing transactions can be edited via the pencil icon or deleted via the trash icon, with balance recalculated automatically.
+
+View analytics:  
+The “Analytics” page shows pie charts for income and expenses grouped by category, using the same period filters.
+
+Log out:  
+The user logs out via the header menu and is redirected to the login page.
+
+---
+
+## Technical Assignment
+
+### Stage 1
+
+Layout of all pages, including form validation error states.  
+Result: all pages match the design mockups and have responsive versions.
+
+### Stage 2
+
+Full implementation of registration and authentication.  
+An application shell and core router are introduced.
+
+Result: authentication works fully, while all other pages are rendered as static layouts without internal logic.
+
+Stage 2 includes:
+1. Implementation of login and registration pages with client-side validation and visual error states. Authentication uses a standard token exchange flow based on the provided YAML specification and should be tested in Postman before implementation.
+2. Implementation of the application core and router. Unauthorized users are redirected to the login page. Authorized users can access all pages except registration. All pages are rendered through the routing mechanism, not by directly opening HTML files.
+
+### Stage 3
+
+Project completion.  
+Result: a fully finished application that meets the design and technical requirements.
+
+This stage includes implementation of all remaining functionality according to the specification and design mockups.
+
+---
+
+## Local Development
+
+### Start the server
+
+```bash
+cd server
+npm install
+npm start
+```
+
+Start the client
+```bash
+cd client
+npm install
+npm run dev
+```
+
+The server runs on http://localhost:3000.
+The client is available at http://localhost:8080 by default (webpack-dev-server).
