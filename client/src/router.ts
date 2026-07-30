@@ -17,7 +17,7 @@ export class Router {
 
     constructor() {
         this.initEvents();
-        Auth.processUnauthorizedResponse.bind(this);
+        Auth.initialize(this.navigateTo.bind(this));
 
         this.appElement = document.getElementById('app');
         this.navbarElement = document.getElementById('navbar');
@@ -71,9 +71,7 @@ export class Router {
     }
 
     private addTitle(): void {
-        if (this.page) {
-        document.title = this.page.title ? this.page.title : DEFAULT_PAGE_TITLE;
-        }
+        document.title = this.page?.title ? this.page.title : DEFAULT_PAGE_TITLE;
     }
 
     private async handleNavigation(): Promise<void> {
@@ -89,6 +87,8 @@ export class Router {
             if (this.appElement) {
                 this.appElement.innerHTML = '<h1>Маршрут не найден</h1>';
             }
+            this.addTitle();
+            this.toggleNav();
             return;
         }
 

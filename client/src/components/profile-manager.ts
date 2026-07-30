@@ -21,7 +21,7 @@ export class ProfileManager {
         const userName: HTMLElement | null = document.getElementById('userName');
         const userInfo = Auth.getUserInfo();
 
-        if (userName) {
+        if (userName && userInfo) {
         userName.innerText = userInfo.name;
         }
     }
@@ -38,6 +38,11 @@ export class ProfileManager {
     private logOfUser(): void {
         const logoutButton: HTMLElement | null = document.getElementById('logout');
         if (!logoutButton) return;
+
+        // Кнопка живёт в index.html и не пересоздаётся при навигации,
+        // поэтому обработчик навешиваем только один раз
+        if (logoutButton.dataset.logoutBound) return;
+        logoutButton.dataset.logoutBound = 'true';
 
         logoutButton.addEventListener('click', () => {
             Auth.removeTokens();
