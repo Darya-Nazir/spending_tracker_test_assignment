@@ -1,0 +1,33 @@
+{
+  "compilerOptions": {
+    // Node 24 запускает .ts напрямую, стирая типы на лету. Сборки нет —
+    // tsc здесь работает только проверщиком типов.
+    "noEmit": true,
+
+    "target": "es2023",
+    "lib": ["es2023"],
+    "module": "nodenext",
+    "moduleResolution": "nodenext",
+    "types": ["node"],
+
+    "allowImportingTsExtensions": true,
+    "verbatimModuleSyntax": true,
+
+    // Запрещает синтаксис, который стирание типов не умеет: enum, namespace
+    // и сокращённые поля вида constructor(private readonly dep: Dep).
+    // Без этого флага такой код прошёл бы проверку и упал в рантайме.
+    "erasableSyntaxOnly": true,
+
+    "strict": true,
+    "noUncheckedIndexedAccess": true,
+    "noImplicitOverride": true,
+    "noFallthroughCasesInSwitch": true,
+    "exactOptionalPropertyTypes": true,
+
+    "skipLibCheck": true,
+    "forceConsistentCasingInFileNames": true,
+    "isolatedModules": true
+  },
+  "include": ["src/**/*.ts", "test/**/*.ts"],
+  "exclude": ["node_modules", "migrations"]
+}
