@@ -14,8 +14,8 @@ const configFor = (patch: RawEnv): Config => Config.load({
 
 describe('Logger', () => {
 
-    test('writes one machine-readable JSON object per line when not in development', async () => {
-        // вне development пишет по одному машиночитаемому JSON-объекту на строку
+    test('writes one JSON object per line when not in development', async () => {
+        // вне development пишет по одному JSON-объекту на строку
         const sink = new MemorySink();
         const logger = Logger.create(configFor({ NODE_ENV: 'production' }), sink);
 
@@ -23,12 +23,11 @@ describe('Logger', () => {
         logger.warn({ requestId: 'req-2' }, 'refresh token rejected');
 
         const lines = await sink.lines();
-        assert.equal(lines.length, 2, 'каждая запись — ровно одна строка, без переносов внутри');
+        assert.equal(lines.length, 2, 'две записи — две строки, без переносов внутри записи');
 
         const [started, rejected] = lines.map((line) => JSON.parse(line) as Record<string, unknown>);
 
-        // Уровень — строковая метка, а не число: логи читают и люди, и grep,
-        // и ни тем, ни другим не должно приходиться помнить, что 30 — это info.
+        // Уровень строкой, а не числом 30: по такому значению фильтруют grep и jq.
         assert.equal(started?.level, 'info');
         assert.equal(started?.msg, 'server started');
         assert.equal(started?.requestId, 'req-1');
@@ -37,11 +36,11 @@ describe('Logger', () => {
         assert.equal(rejected?.msg, 'refresh token rejected');
         assert.equal(rejected?.requestId, 'req-2');
 
-        assert.equal(typeof started?.time, 'number', 'у каждой записи есть отметка времени');
+        assert.equal(typeof started?.time, 'number', 'в записи есть отметка времени');
     });
 
-    test('switches to human-readable output in development', async () => {
-        // в development переключается на человекочитаемый вывод
+    test('writes human-readable text in development', async () => {
+        // в development пишет человекочитаемый текст
         const sink = new MemorySink();
         const logger = Logger.create(configFor({ NODE_ENV: 'development' }), sink);
 
@@ -51,15 +50,15 @@ describe('Logger', () => {
 
         assert.throws(
             () => JSON.parse(text.split('\n')[0]!),
-            'в dev первая строка — не JSON, иначе pino-pretty не подключился',
+            'первая строка не разбирается как JSON — значит формат сменился на pretty',
         );
-        assert.match(text, /server started/, 'сообщение видно как есть');
-        assert.match(text, /INFO/i, 'уровень подписан словом');
-        assert.match(text, /req-1/, 'поля записи не теряются при форматировании');
+        assert.match(text, /server started/, 'текст сообщения на месте');
+        assert.match(text, /INFO/i, 'уровень выведен словом');
+        assert.match(text, /req-1/, 'поля записи не потеряны');
     });
 
-    test('honours LOG_LEVEL, dropping records below the configured threshold', async () => {
-        // уважает LOG_LEVEL, отбрасывая записи ниже настроенного порога
+    test('drops records below LOG_LEVEL and writes the rest', async () => {
+        // отбрасывает записи ниже LOG_LEVEL, остальные пишет
         const quiet = new MemorySink();
         const quietLogger = Logger.create(configFor({ LOG_LEVEL: 'info' }), quiet);
 
@@ -67,7 +66,7 @@ describe('Logger', () => {
         quietLogger.info('kept');
 
         const quietRecords = await quiet.records();
-        assert.equal(quietRecords.length, 1, 'debug-строка не должна доехать до стока');
+        assert.equal(quietRecords.length, 1, 'запись уровня debug не дошла до стока');
         assert.equal(quietRecords[0]?.msg, 'kept');
 
         const verbose = new MemorySink();
@@ -77,13 +76,13 @@ describe('Logger', () => {
         verboseLogger.info('kept');
 
         const verboseRecords = await verbose.records();
-        assert.equal(verboseRecords.length, 2, 'на LOG_LEVEL=debug та же строка проходит');
+        assert.equal(verboseRecords.length, 2, 'при LOG_LEVEL=debug та же запись проходит');
         assert.equal(verboseRecords[0]?.msg, 'query');
         assert.equal(verboseRecords[0]?.sql, 'select 1');
     });
 
-    test('child logger stamps its bindings onto every record it writes', async () => {
-        // child-логгер проставляет свои поля в каждую написанную им запись
+    test('child logger adds its fields to every record it writes', async () => {
+        // child-логгер добавляет свои поля в каждую написанную им запись
         const sink = new MemorySink();
         const logger = Logger.create(configFor({}), sink);
 
@@ -91,8 +90,7 @@ describe('Logger', () => {
         child.info('handling request');
         child.warn({ status: 401 }, 'rejected');
 
-        // Родительский логгер про requestId ничего не знает: child-логгер —
-        // отдельный объект, а не глобальная мутация.
+        // child() возвращает новый объект; поля исходного логгера не меняются.
         logger.info('unrelated background work');
 
         const records = await sink.records();
@@ -101,9 +99,9 @@ describe('Logger', () => {
         assert.equal(records[0]?.requestId, 'req-42');
         assert.equal(records[0]?.msg, 'handling request');
 
-        assert.equal(records[1]?.requestId, 'req-42', 'поле держится на всех вызовах child-логгера');
+        assert.equal(records[1]?.requestId, 'req-42', 'поле есть во всех записях child-логгера');
         assert.equal(records[1]?.status, 401, 'поля вызова добавляются к полям child-логгера');
 
-        assert.equal(records[2]?.requestId, undefined, 'родитель остался незатронутым');
+        assert.equal(records[2]?.requestId, undefined, 'у записи исходного логгера поля нет');
     });
 });

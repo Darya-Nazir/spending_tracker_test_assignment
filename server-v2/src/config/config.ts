@@ -1,16 +1,15 @@
 import { z } from 'zod';
 
 /**
- * Единственное место, где читается и проверяется окружение.
+ * Чтение и проверка переменных окружения. Больше нигде в коде process.env
+ * не читается.
  *
- * Смысл — падать на старте, а не в проде: все переменные, которые
- * приложению нужны, проверяются здесь один раз, и процесс отказывается
- * подниматься, выдав читаемый список всего, что не так.
+ * Проверка выполняется один раз при старте: если переменных не хватает или
+ * значения некорректны, Config.load() бросает ошибку со списком всех проблем,
+ * и процесс не поднимается.
  *
- * Схема растёт вместе с приложением: переменная добавляется в тот этап,
- * который её впервые использует, а не заранее. Ниже закомментированы те,
- * что уже спроектированы, но пока никем не читаются — у каждой указан этап,
- * который её вернёт.
+ * В схеме находятся только те переменные, которые уже кем-то читаются.
+ * Остальные закомментированы, у каждой указан этап, на котором она включится.
  */
 
 const LOG_LEVELS = ['fatal', 'error', 'warn', 'info', 'debug', 'trace'] as const;
@@ -49,7 +48,7 @@ const envSchema = z.object({
         .int('PORT must be a whole number')
         .min(1, 'PORT must be between 1 and 65535')
         .max(65535, 'PORT must be between 1 and 65535')
-        .default(3000),
+        .default(3500),
 
     LOG_LEVEL: z
         .enum(LOG_LEVELS, `LOG_LEVEL must be one of: ${LOG_LEVELS.join(', ')}`)
@@ -63,15 +62,15 @@ const envSchema = z.object({
     //         'DATABASE_URL must be a postgres:// or postgresql:// connection string',
     //     ),
 
-    // --- этап 4 (CORS): webpack dev server, на котором крутится клиент ---
+    // --- этап 4 (CORS): адрес webpack dev server, на котором работает клиент ---
     // CORS_ORIGIN: z
     //     .string()
     //     .regex(HTTP_URL_PATTERN, 'CORS_ORIGIN must be an http(s) URL, including the scheme')
     //     .default('http://localhost:9000'),
 
     // --- этап 11 (сервис паролей) ---
-    // Старый сервер вызывал bcrypt.genSalt(Number('example')) — то есть genSalt(NaN).
-    // Целое число не меньше 10 делает такую ошибку невыразимой в принципе.
+    // Старый сервер вызывал bcrypt.genSalt(Number('example')), то есть genSalt(NaN).
+    // Проверка на целое число не меньше 10 не даёт передать сюда NaN.
     // BCRYPT_COST: z.coerce
     //     .number()
     //     .int('BCRYPT_COST must be a whole number')
@@ -93,7 +92,7 @@ const envSchema = z.object({
     // REFRESH_TTL_REMEMBER: ttl('REFRESH_TTL_REMEMBER', '30d'),
 
     // --- этап 19 (фильтры периода) ---
-    // Таймзона, относительно которой считаются today/week/month/year.
+    // Таймзона, в которой вычисляются границы today, week, month, year.
     // APP_TZ: z
     //     .string()
     //     .refine(isKnownTimezone, 'APP_TZ must be a timezone this runtime knows, e.g. Asia/Almaty')
@@ -101,16 +100,16 @@ const envSchema = z.object({
 });
 
 // --- этап 13 (минимальная аутентификация) ---
-// Межполевая проверка навешивается на схему после z.object():
+// Проверка, затрагивающая два поля сразу, добавляется к схеме после z.object():
 // .refine((env) => env.JWT_ACCESS_SECRET !== env.JWT_REFRESH_SECRET, {
 //     message: 'JWT_REFRESH_SECRET must differ from JWT_ACCESS_SECRET',
 //     path: ['JWT_REFRESH_SECRET'],
 // });
 
-/** Разобранное и проверенное окружение. Тип выводится из схемы, дублировать нечего. */
+/** Разобранное окружение. Тип выводится из схемы, руками не описывается. */
 type ParsedEnv = z.infer<typeof envSchema>;
 
-/** Сырое окружение: в process.env всё либо строка, либо undefined. */
+/** Окружение до разбора: в process.env значения либо строки, либо undefined. */
 export type RawEnv = Record<string, string | undefined>;
 
 export type NodeEnv = ParsedEnv['NODE_ENV'];
@@ -121,7 +120,7 @@ export class Config {
     readonly port: number;
     readonly logLevel: LogLevel;
 
-    // Готовые булевы флаги вместо сравнения строк, разбросанного по всему коду.
+    // Вычисленные один раз флаги, чтобы в остальном коде не сравнивать строки.
     readonly isDevelopment: boolean;
     readonly isTest: boolean;
     readonly isProduction: boolean;
@@ -146,9 +145,9 @@ export class Config {
     // readonly appTz: string;
 
     /**
-     * @param env по умолчанию process.env; тесты передают окружение явно,
-     *   чтобы не мутировать глобальное состояние.
-     * @throws Error с перечислением всех недостающих и некорректных переменных сразу.
+     * @param env по умолчанию process.env. Тесты передают окружение
+     *   аргументом, поэтому им не нужно менять process.env.
+     * @throws Error со списком всех недостающих и некорректных переменных.
      */
     static load(env: RawEnv = process.env): Config {
         const result = envSchema.safeParse(env);
@@ -202,7 +201,7 @@ export class Config {
         this.isTest = this.nodeEnv === 'test';
         this.isProduction = this.nodeEnv === 'production';
 
-        // readonly защищает на этапе компиляции, Object.freeze — в рантайме.
+        // readonly проверяется при компиляции, Object.freeze — при выполнении.
         Object.freeze(this);
     }
 }
