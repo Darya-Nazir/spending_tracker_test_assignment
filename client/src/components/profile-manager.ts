@@ -2,6 +2,7 @@ import { Auth } from "../services/auth";
 import { Http } from "../services/http";
 import {RoutePath} from "../types/route-type";
 import Popover = bootstrap.Popover;
+import {API_URL} from "../constants/api";
 
 export class ProfileManager {
     readonly navigateToPath: (path: RoutePath) => void;
@@ -51,7 +52,7 @@ export class ProfileManager {
     }
 
     public async showBalance(): Promise<void> {
-        const url = 'http://localhost:3000/api/balance';
+        const url = `${API_URL}/balance`;
         const balanceSpan: HTMLElement | null = document.getElementById('balance');
         const balance = (await Http.request(url, 'GET')).balance;
         if (balanceSpan) {

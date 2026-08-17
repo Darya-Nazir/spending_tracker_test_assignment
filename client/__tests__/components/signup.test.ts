@@ -15,6 +15,7 @@ import { createMockEvent } from '../mocks/utils/event';
 import { SignupFormData } from '../../src/types/signup-type';
 import { RoutePath } from '../../src/types/route-type';
 import { LoginData } from '../../src/types/login-type';
+import {API_URL} from "../../src/constants/api";
 
 // Определяем моки
 const httpMock = createHttpMock();
@@ -93,7 +94,7 @@ describe('Signup Component', () => {
         await signup['submitForm'](user as SignupFormData);
 
         expect(httpMock.request).toHaveBeenCalledWith(
-            'http://localhost:3000/api/signup',
+            `${API_URL}/signup`,
             'POST',
             user,
             false

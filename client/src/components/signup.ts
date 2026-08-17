@@ -4,6 +4,7 @@ import {DefaultCategoriesManager} from "../services/default-categories";
 import {RoutePath} from "../types/route-type";
 import {SignupFormData} from "../types/signup-type";
 import {Validator} from "../services/validator";
+import {API_URL} from "../constants/api";
 
 export class Signup extends UserManager {
     readonly fullNameInput: HTMLInputElement | null;
@@ -65,7 +66,7 @@ export class Signup extends UserManager {
 
     private async submitForm(data: SignupFormData) {
         try {
-            const signupPath = 'http://localhost:3000/api/signup';
+            const signupPath = `${API_URL}/signup`;
             const signupResult = await Http.request(signupPath, 'POST', data, false);
 
             if (signupResult) {

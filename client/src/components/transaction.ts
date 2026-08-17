@@ -5,6 +5,7 @@ import { Filter } from "../services/filter";
 import { Unselect } from "../services/unselect";
 import {RoutePath} from "../types/route-type";
 import {Operation} from "../types/operations-type";
+import {API_URL} from "../constants/api";
 
 export class Transaction extends BaseOperations {
     constructor(navigateTo: (path: RoutePath) => void) {
@@ -102,7 +103,7 @@ export class Transaction extends BaseOperations {
         if (!createIncomeButton) return;
         createIncomeButton.addEventListener("click", async () => {
             await DefaultCategoriesManager.createIfEmpty(
-                'http://localhost:3000/api/categories/income',
+                `${API_URL}/categories/income`,
                 DefaultCategoriesManager.incomeCategories
             );
             this.navigateToPath('create-transaction?type=income' as RoutePath);
@@ -111,7 +112,7 @@ export class Transaction extends BaseOperations {
         if (!createExpenseButton) return;
         createExpenseButton.addEventListener("click", async () => {
             await DefaultCategoriesManager.createIfEmpty(
-                'http://localhost:3000/api/categories/expense',
+                `${API_URL}/categories/expense`,
                 DefaultCategoriesManager.expenseCategories
             );
             this.navigateToPath('create-transaction?type=expense' as RoutePath);

@@ -2,6 +2,7 @@ import { DatePickerManager } from "../../services/date-picker";
 import { ProfileManager } from "../profile-manager";
 import {RoutePath} from "../../types/route-type";
 import {Operation} from "../../types/operations-type";
+import {API_URL} from "../../constants/api";
 
 export class BaseOperations {
     apiUrl: string;
@@ -11,7 +12,7 @@ export class BaseOperations {
     navigateTo: (path: RoutePath) => void;
 
     constructor(navigateTo: (path: RoutePath) => void) {
-        this.apiUrl = 'http://localhost:3000/api/operations';
+        this.apiUrl = `${API_URL}/operations`;
         this.container = document.querySelector('.table tbody');
         this.datePickerManager = new DatePickerManager();
         this.balanceManager = new ProfileManager(navigateTo);

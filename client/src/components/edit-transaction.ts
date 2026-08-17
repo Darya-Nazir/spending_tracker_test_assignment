@@ -6,6 +6,7 @@ import {Operation} from "../types/operations-type";
 import {Category} from "../types/category-type";
 import {TransactionData} from "../types/transaction-type";
 import {Validator} from "../services/validator";
+import {API_URL} from "../constants/api";
 
 export class EditTransaction extends EditCard {
     private typeInput: HTMLInputElement | null = null;
@@ -24,7 +25,7 @@ export class EditTransaction extends EditCard {
     constructor(navigateTo: (path: RoutePath) => void) {
         super(
             navigateTo,
-            'http://localhost:3000/api/operations',
+            `${API_URL}/operations`,
             'transactions' as RoutePath,
         );
 
@@ -112,7 +113,7 @@ export class EditTransaction extends EditCard {
         if (!this.categoriesList) return;
 
         try {
-            const apiUrl = `http://localhost:3000/api/categories/${type}`;
+            const apiUrl = `${API_URL}/categories/${type}`;
             const categories = await Http.request<Category[]>(apiUrl, 'GET');
             this.renderCategories(categories);
         } catch (error) {

@@ -5,6 +5,7 @@ import {RoutePath} from "../types/route-type";
 import {Validator} from "../services/validator";
 import {TransactionData} from "../types/transaction-type";
 import {Category} from "../types/category-type";
+import {API_URL} from "../constants/api";
 
 export class NewTransaction extends NewCard {
     private typeInput: HTMLInputElement | null;
@@ -22,7 +23,7 @@ export class NewTransaction extends NewCard {
     constructor(navigateTo: (path: RoutePath) => void) {
         super(
             navigateTo,
-            'http://localhost:3000/api/operations',
+            `${API_URL}/operations`,
             'transactions' as RoutePath
         );
 
@@ -136,7 +137,7 @@ export class NewTransaction extends NewCard {
         if (!this.typeInput) return;
 
         const type: 'income' | 'expense' = this.typeInput.value === 'Доход' ? 'income' : 'expense';
-        const apiUrl = `http://localhost:3000/api/categories/${type}`;
+        const apiUrl = `${API_URL}/categories/${type}`;
         try {
             const categories = await Http.request(apiUrl, 'GET');
             this.renderCategories(categories);

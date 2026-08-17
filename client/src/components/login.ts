@@ -3,6 +3,7 @@ import {Auth} from "../services/auth";
 import {Http} from "../services/http";
 import {RoutePath} from "../types/route-type";
 import {Validator} from "../services/validator";
+import {API_URL} from "../constants/api";
 
 export class Login extends UserManager {
     private rememberMeElement: HTMLInputElement | null = null;
@@ -51,7 +52,7 @@ export class Login extends UserManager {
                 rememberMe: this.rememberMeElement!.checked,
             };
 
-            const path = 'http://localhost:3000/api/login';
+            const path = `${API_URL}/login`;
             // Указываем false для requiresAuth
             const result = await Http.request(path, 'POST', dataObject, false);
 

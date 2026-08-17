@@ -1,13 +1,14 @@
 import { CardPage } from "./base-class/card-page";
 import {RoutePath} from "../types/route-type";
 import {Validator} from "../services/validator";
+import {API_URL} from "../constants/api";
 
 export class Incomes extends CardPage {
     constructor(navigateTo: (path: RoutePath) => void) {
         super(
             navigateTo,
             'incomesContainer',
-            'http://localhost:3000/api/categories/income',
+            `${API_URL}/categories/income`,
             '/create-income',
             '/edit-income',
         );

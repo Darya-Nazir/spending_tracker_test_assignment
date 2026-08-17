@@ -1,5 +1,6 @@
 import {RoutePath} from "../types/route-type";
 import {UserInfo} from "../types/user-info-type";
+import {API_URL} from "../constants/api";
 
 export class Auth {
     public static navigateToPath: (path: RoutePath) => void;
@@ -16,7 +17,7 @@ export class Auth {
     public static async processUnauthorizedResponse(): Promise<boolean > {
         const refreshToken = localStorage.getItem(this.refreshTokenKey);
         if (refreshToken) {
-            const response = await fetch('http://localhost:3000/api/refresh', {
+            const response = await fetch(`${API_URL}/refresh`, {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json',
