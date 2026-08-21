@@ -9,6 +9,7 @@ const configFor = (patch: RawEnv): Config => Config.load({
     NODE_ENV: 'production',
     PORT: '3000',
     LOG_LEVEL: 'info',
+    DATABASE_URL: 'postgres://spending:spending@localhost:5432/spending_test',
     ...patch,
 });
 

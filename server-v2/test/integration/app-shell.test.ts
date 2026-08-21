@@ -7,8 +7,11 @@ import { Logger } from '../../src/logging/logger.ts';
 import { AppFactory } from '../../src/http/app.ts';
 import { MemorySink } from '../helpers/memory-sink.ts';
 
+/** Тесты этого файла к базе не ходят: адрес нужен только чтобы Config.load прошёл. */
+const DATABASE_URL = 'postgres://spending:spending@localhost:5432/spending_test';
+
 const buildApp = () => {
-    const config = Config.load({ NODE_ENV: 'test', PORT: '3000', LOG_LEVEL: 'debug' });
+    const config = Config.load({ NODE_ENV: 'test', PORT: '3000', LOG_LEVEL: 'debug', DATABASE_URL });
     return new AppFactory(config, Logger.create(config, new MemorySink())).build();
 };
 

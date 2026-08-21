@@ -14,7 +14,10 @@ import {
     ValidationError,
 } from '../../src/errors/app-error.ts';
 
-const config = Config.load({ NODE_ENV: 'test', PORT: '3000', LOG_LEVEL: 'debug' });
+/** Тесты этого файла к базе не ходят: адрес нужен только чтобы Config.load прошёл. */
+const DATABASE_URL = 'postgres://spending:spending@localhost:5432/spending_test';
+
+const config = Config.load({ NODE_ENV: 'test', PORT: '3000', LOG_LEVEL: 'debug', DATABASE_URL });
 
 // Обработчик вызывает у ответа только status() и json(), а у запроса читает
 // req.log и метаданные для лога. Вместо объектов express подставляются заглушки

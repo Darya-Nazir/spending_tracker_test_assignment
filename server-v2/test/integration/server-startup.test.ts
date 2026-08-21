@@ -10,6 +10,9 @@ const SERVER_ENTRY = fileURLToPath(new URL('../../src/server.ts', import.meta.ur
 /** Не 3000: там может работать старый server/ или dev-запуск этого. */
 const PORT = 3211;
 
+/** Сервер на старте в базу не ходит, но Config требует адрес. */
+const DATABASE_URL = 'postgres://spending:spending@localhost:5432/spending_test';
+
 /** Порт, который тест занимает сам, чтобы проверить поведение при конфликте. */
 const BUSY_PORT = 3212;
 
@@ -105,6 +108,7 @@ describe('server startup', () => {
             NODE_ENV: 'production',
             PORT: String(PORT),
             LOG_LEVEL: 'info',
+            DATABASE_URL,
         });
 
         try {
@@ -137,6 +141,7 @@ describe('server startup', () => {
             NODE_ENV: 'production',
             PORT: String(BUSY_PORT),
             LOG_LEVEL: 'info',
+            DATABASE_URL,
         });
 
         try {

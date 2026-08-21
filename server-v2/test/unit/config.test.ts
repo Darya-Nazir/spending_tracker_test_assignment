@@ -11,6 +11,7 @@ const validEnv: Readonly<RawEnv> = Object.freeze({
     NODE_ENV: 'test',
     PORT: '3000',
     LOG_LEVEL: 'debug',
+    DATABASE_URL: 'postgres://spending:spending@localhost:5432/spending_test',
 });
 
 const envWith = (patch: RawEnv): RawEnv => ({ ...validEnv, ...patch });
@@ -32,6 +33,7 @@ describe('Config', () => {
         assert.equal(config.nodeEnv, 'test');
         assert.equal(config.port, 3000);
         assert.equal(config.logLevel, 'debug');
+        assert.equal(config.databaseUrl, 'postgres://spending:spending@localhost:5432/spending_test');
     });
 
     test('applies a default to every optional variable', () => {
@@ -41,6 +43,12 @@ describe('Config', () => {
         assert.equal(config.nodeEnv, 'development');
         assert.equal(config.port, 3500);
         assert.equal(config.logLevel, 'info');
+    });
+
+    test('fails when DATABASE_URL is missing or malformed', () => {
+        // падает, если DATABASE_URL нет или он не похож на строку подключения
+        assert.throws(() => Config.load(envWithout('DATABASE_URL')), /DATABASE_URL/);
+        assert.throws(() => Config.load(envWith({ DATABASE_URL: 'localhost:5432' })), /DATABASE_URL/);
     });
 
     test('rejects invalid values, naming every offending variable at once', () => {

@@ -14,10 +14,9 @@ import { z } from 'zod';
 
 const LOG_LEVELS = ['fatal', 'error', 'warn', 'info', 'debug', 'trace'] as const;
 
-// --- этап 4 (Postgres + Database) ---
-// const POSTGRES_URL_PATTERN = /^postgres(ql)?:\/\/.+/;
+const POSTGRES_URL_PATTERN = /^postgres(ql)?:\/\/.+/;
 
-// --- этап 4 (CORS) ---
+// --- этап 12а (CORS) ---
 // const HTTP_URL_PATTERN = /^https?:\/\/[^\s/]+/;
 
 // --- этап 13 (минимальная аутентификация) ---
@@ -54,15 +53,17 @@ const envSchema = z.object({
         .enum(LOG_LEVELS, `LOG_LEVEL must be one of: ${LOG_LEVELS.join(', ')}`)
         .default('info'),
 
-    // --- этап 4 (Postgres + Database) ---
-    // DATABASE_URL: z
-    //     .string()
-    //     .regex(
-    //         POSTGRES_URL_PATTERN,
-    //         'DATABASE_URL must be a postgres:// or postgresql:// connection string',
-    //     ),
+    // Адрес базы, с которой работает приложение. Тестовая база — не дело
+    // конфига: прогон тестов подставляет TEST_DATABASE_URL в эту же
+    // переменную для дочернего процесса (этапы 6–7).
+    DATABASE_URL: z
+        .string()
+        .regex(
+            POSTGRES_URL_PATTERN,
+            'DATABASE_URL must be a postgres:// or postgresql:// connection string',
+        ),
 
-    // --- этап 4 (CORS): адрес webpack dev server, на котором работает клиент ---
+    // --- этап 12а (CORS): адрес webpack dev server, на котором работает клиент ---
     // CORS_ORIGIN: z
     //     .string()
     //     .regex(HTTP_URL_PATTERN, 'CORS_ORIGIN must be an http(s) URL, including the scheme')
@@ -125,8 +126,9 @@ export class Config {
     readonly isTest: boolean;
     readonly isProduction: boolean;
 
-    // --- этап 4 ---
-    // readonly databaseUrl: string;
+    readonly databaseUrl: string;
+
+    // --- этап 12а (CORS) ---
     // readonly corsOrigin: string;
 
     // --- этап 11 ---
@@ -178,8 +180,9 @@ export class Config {
         this.port = values.PORT;
         this.logLevel = values.LOG_LEVEL;
 
-        // --- этап 4 ---
-        // this.databaseUrl = values.DATABASE_URL;
+        this.databaseUrl = values.DATABASE_URL;
+
+        // --- этап 12а (CORS) ---
         // this.corsOrigin = values.CORS_ORIGIN;
 
         // --- этап 11 ---
