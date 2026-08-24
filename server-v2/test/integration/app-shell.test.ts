@@ -5,6 +5,7 @@ import request from 'supertest';
 import { Config } from '../../src/config/config.ts';
 import { Logger } from '../../src/logging/logger.ts';
 import { AppFactory } from '../../src/http/app.ts';
+import { Database } from '../../src/db/database.ts';
 import { MemorySink } from '../helpers/memory-sink.ts';
 
 /** Тесты этого файла к базе не ходят: адрес нужен только чтобы Config.load прошёл. */
@@ -12,7 +13,12 @@ const DATABASE_URL = 'postgres://spending:spending@localhost:5432/spending_test'
 
 const buildApp = () => {
     const config = Config.load({ NODE_ENV: 'test', PORT: '3000', LOG_LEVEL: 'debug', DATABASE_URL });
-    return new AppFactory(config, Logger.create(config, new MemorySink())).build();
+    const logger = Logger.create(config, new MemorySink());
+
+    // Database нужен здесь только чтобы собрать AppFactory: /health в базу
+    // не ходит, а запрос на неизвестный путь до неё не доходит. Ни одного
+    // соединения не открывается, поэтому close() не вызывается.
+    return new AppFactory(config, logger, new Database(config, logger)).build();
 };
 
 // Это название группы тестов. Речь про «каркас приложения»: 

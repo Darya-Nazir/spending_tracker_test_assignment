@@ -1,4 +1,5 @@
 import { Config } from './config/config.ts';
+import { Database } from './db/database.ts';
 import { AppFactory } from './http/app.ts';
 import { Logger } from './logging/logger.ts';
 
@@ -17,7 +18,13 @@ const loadConfig = (): Config => {
 
 const config = loadConfig();
 const logger = Logger.create(config);
-const app = new AppFactory(config, logger).build();
+
+// Пул создаётся до listen(), но соединение не открывает: при выключенной
+// базе процесс всё равно поднимается и отвечает 503 на /ready. Закрытие
+// пула по SIGTERM — этап 23.
+const database = new Database(config, logger);
+
+const app = new AppFactory(config, logger, database).build();
 
 // Колбэк в app.listen() не передаётся намеренно: express 5 вешает его не только
 // на событие listening, но и на error (lib/application.js), поэтому на занятом

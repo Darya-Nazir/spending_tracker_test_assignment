@@ -3,6 +3,7 @@ import express, { json, type Express, type Router } from 'express';
 // Объект, который возвращает express(), физически является 
 // функцией-обработчиком запроса
 import type { Config } from '../config/config.ts';
+import type { Database } from '../db/database.ts';
 import type { Logger } from '../logging/logger.ts';
 import { ErrorHandler } from './middleware/error-handler.ts';
 import { NotFoundHandler } from './middleware/not-found.ts';
@@ -21,10 +22,12 @@ const BODY_LIMIT = '100kb';
 export class AppFactory {
     readonly #config: Config;
     readonly #logger: Logger;
+    readonly #database: Database;
 
-    constructor(config: Config, logger: Logger) {
+    constructor(config: Config, logger: Logger, database: Database) {
         this.#config = config;
         this.#logger = logger;
+        this.#database = database;
     }
 
     build(): Express {
@@ -54,6 +57,6 @@ export class AppFactory {
      * классы друг друга не создают и их можно собрать иначе в тестах.
      */
     #healthRouter(): Router {
-        return HealthRouter.create(new HealthController(new HealthService()));
+        return HealthRouter.create(new HealthController(new HealthService(this.#database)));
     }
 }

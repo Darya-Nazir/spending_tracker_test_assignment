@@ -13,7 +13,18 @@ export class HealthController {
         this.#service = service;
     }
 
-    readonly get = (_req: Request, res: Response): void => {
+    readonly health = (_req: Request, res: Response): void => {
         res.status(200).json(this.#service.check());
+    };
+
+    /**
+     * 503, а не 500: 500 означает ошибку в обработке запроса, 503 — что
+     * процесс работает, но обслужить запрос сейчас не может. Балансировщик
+     * по 503 убирает адрес из выдачи и продолжает опрашивать /ready.
+     */
+    readonly ready = async (_req: Request, res: Response): Promise<void> => {
+        const readiness = await this.#service.readiness();
+
+        res.status(readiness.db === 'up' ? 200 : 503).json(readiness);
     };
 }

@@ -5,15 +5,6 @@
 PostgreSQL работает в Docker Desktop, а не как системный сервис Ubuntu.
 Docker Desktop должен иметь включённую WSL Integration для Ubuntu.
 
-Создайте локальное окружение и запустите контейнер:
-
-```bash
-cd server-v2
-cp .env.example .env
-docker compose up -d
-docker compose ps
-```
-
 Контейнер создаёт две базы:
 
 - `spending_dev` — локальная разработка;
@@ -37,3 +28,12 @@ docker compose down
 
 Команда `docker compose down -v` удаляет обе локальные базы без возможности
 восстановления из этого volume.
+
+
+Быстро проверить, что докер работает:
+docker compose ps
+логи в реальном времени:
+docker compose logs -f postgres     
+
+docker compose up -d 
+эта команда приводит состояние докера в соответствие с compose.yaml. 
