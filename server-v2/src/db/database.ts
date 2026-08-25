@@ -4,22 +4,10 @@ import type { Config } from '../config/config.ts';
 import type { LogFields, Logger } from '../logging/logger.ts';
 
 /**
- * Единственное место, где создаётся pg.Pool. Репозитории получают этот объект
- * и вызывают query(); пакет pg больше нигде не импортируется.
- *
- * Pool, а не Client: Client — это одно соединение, и параллельные запросы
- * выполняются на нём по очереди. Pool держит несколько соединений и выдаёт
- * свободное, а установка нового соединения занимает больше времени, чем сам
- * запрос.
- *
- * SQL пишется общим логгером, а не req.log: у Database нет объекта запроса,
- * поэтому в этих строках нет поля requestId и найти по нему SQL конкретного
- * HTTP-запроса нельзя. На этапе 23 req.log попадёт сюда через
- * AsyncLocalStorage; передавать логгер параметром в каждый метод каждого
- * репозитория не будем.
+ * Единственная точка приложения, через которую вызывается драйвер и создаётся pg.Pool. 
+ * Репозитории получают этот объект и вызывают query()
  */
 
-/** Запрос для проверки соединения: не читает таблиц и не берёт блокировок. */
 const PING = 'select 1';
 
 export class Database {
@@ -29,7 +17,7 @@ export class Database {
     constructor(config: Config, logger: Logger) {
         this.#logger = logger;
 
-        // Соединение открывается не здесь, а при первом query(). Поэтому
+        // Соединение открывается при первом query(). Поэтому
         // процесс поднимается и при выключенной базе — она нужна только
         // для ответа на /ready.
         this.#pool = new Pool({ connectionString: config.databaseUrl });
@@ -45,14 +33,10 @@ export class Database {
         });
     }
 
-    /**
-     * Значения передаются вторым аргументом и подставляются в placeholder-ы
-     * $1, $2, ... на стороне pg. Вставлять их в текст SQL самим нельзя:
-     * значение вида "1; drop table users" тогда выполнится как SQL.
-     */
+    // запрос
     async query<T extends QueryResultRow = QueryResultRow>(
-        sql: string,
-        params: readonly unknown[] = [],
+        sql: string, //обычная строка с SQL-запросом
+        params: readonly unknown[] = [], //значения, которые PostgreSQL подставляет вместо $1, $2 и тд
     ): Promise<QueryResult<T>> {
         const startedAt = performance.now();
 
@@ -73,8 +57,7 @@ export class Database {
     }
 
     /**
-     * Отвечает ли база на PING. Возвращает false вместо исключения: результат
-     * идёт в тело ответа /ready и обработку запроса не прерывает.
+     * Отвечает ли база на PING-запрос. Используется для /ready
      */
     async isReachable(): Promise<boolean> {
         try {
@@ -82,10 +65,7 @@ export class Database {
 
             return true;
         } catch (error) {
-            // warn, а не error: недоступная база — предусмотренный ответ 503,
-            // а не ошибка в коде. Пока база стартует, такая строка пишется на
-            // каждый опрос /ready, и на уровне error эти строки попадали бы
-            // в отчёты об ошибках.
+            // warn, а не error: недоступная база — предусмотренный ответ 503
             this.#logger.warn({ err: error }, 'database is not reachable');
 
             return false;
@@ -93,9 +73,7 @@ export class Database {
     }
 
     /**
-     * Закрывает все соединения пула. Пока они открыты, в event loop остаются
-     * активные сокеты: процесс не завершается сам, а node:test не выходит
-     * после последнего теста.
+     * Закрывает все соединения пула
      */
     async close(): Promise<void> {
         await this.#pool.end();

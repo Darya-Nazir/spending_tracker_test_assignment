@@ -19,8 +19,7 @@ export class HealthController {
 
     /**
      * 503, а не 500: 500 означает ошибку в обработке запроса, 503 — что
-     * процесс работает, но обслужить запрос сейчас не может. Балансировщик
-     * по 503 убирает адрес из выдачи и продолжает опрашивать /ready.
+     * процесс работает, но обслужить запрос сейчас не может.
      */
     readonly ready = async (_req: Request, res: Response): Promise<void> => {
         const readiness = await this.#service.readiness();
