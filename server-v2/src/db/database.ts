@@ -1,4 +1,4 @@
-import { Pool, type QueryResult, type QueryResultRow } from 'pg';
+import { Pool, types as pgTypes, type QueryResult, type QueryResultRow } from 'pg';
 
 import type { Config } from '../config/config.ts';
 import type { LogFields, Logger } from '../logging/logger.ts';
@@ -9,6 +9,12 @@ import type { LogFields, Logger } from '../logging/logger.ts';
  */
 
 const PING = 'select 1';
+
+// Денежные поля ограничены numeric(14,2) и безопасно помещаются в Number.
+pgTypes.setTypeParser(1700, (value) => Number(value));
+
+// Дату без времени сохраняем строкой, чтобы часовой пояс не менял день.
+pgTypes.setTypeParser(1082, (value) => value);
 
 export class Database {
     readonly #pool: Pool;
@@ -22,12 +28,6 @@ export class Database {
         // для ответа на /ready.
         this.#pool = new Pool({ connectionString: config.databaseUrl });
 
-        // Соединение может закрыться, пока простаивает в пуле: базу
-        // перезапустили или разорвалась сеть. Pool сообщает об этом событием
-        // 'error' и на следующем query() открывает новое соединение.
-        // Событие 'error' без слушателя Node считает необработанной ошибкой
-        // и завершает процесс, поэтому слушатель нужен даже такой — только
-        // для записи в лог.
         this.#pool.on('error', (error) => {
             this.#logger.error({ err: error }, 'idle database client failed');
         });
@@ -46,10 +46,7 @@ export class Database {
 
             return result;
         } catch (error) {
-            // Запись нужна и для упавшего запроса: текст ошибки pg не
-            // содержит SQL, и без этой строки в логе не видно, что
-            // выполнялось. Уровень debug, а не error: ошибку обрабатывает
-            // вызывающий код, он и решает, какой у неё уровень.
+            // Запись нужна и для упавшего запроса, и для недоступной базы
             this.#logQuery(sql, startedAt, { failed: true });
 
             throw error;
