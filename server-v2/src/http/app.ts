@@ -38,8 +38,6 @@ export class AppFactory {
         // не даёт клиенту, поэтому выключен.
         app.disable('x-powered-by');
 
-        // Порядок регистрации —  порядок строк
-        
         app.use(new RequestContext(this.#logger).attach); // помечает все записи одного запроса requestId
         app.use(json({ limit: BODY_LIMIT }));
 

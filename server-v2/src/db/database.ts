@@ -1,7 +1,7 @@
 import { Pool, types as pgTypes, type QueryResult, type QueryResultRow } from 'pg';
 
 import type { Config } from '../config/config.ts';
-import type { LogFields, Logger } from '../logging/logger.ts';
+import type { Logger } from '../logging/logger.ts';
 
 /**
  * Единственная точка приложения, через которую вызывается драйвер и создаётся pg.Pool. 
@@ -23,10 +23,14 @@ export class Database {
     constructor(config: Config, logger: Logger) {
         this.#logger = logger;
 
-        // Соединение открывается при первом query(). Поэтому
-        // процесс поднимается и при выключенной базе — она нужна только
-        // для ответа на /ready.
+        // Соединение открывается при первом query()
         this.#pool = new Pool({ connectionString: config.databaseUrl });
+
+        // Событие означает, что первое физическое
+        // соединение с PostgreSQL действительно установлено.
+        this.#pool.once('connect', () => {
+            this.#logger.info('database connected');
+        });
 
         this.#pool.on('error', (error) => {
             this.#logger.error({ err: error }, 'idle database client failed');
@@ -38,19 +42,7 @@ export class Database {
         sql: string, //обычная строка с SQL-запросом
         params: readonly unknown[] = [], //значения, которые PostgreSQL подставляет вместо $1, $2 и тд
     ): Promise<QueryResult<T>> {
-        const startedAt = performance.now();
-
-        try {
-            const result = await this.#pool.query<T>(sql, [...params]);
-            this.#logQuery(sql, startedAt, { rows: result.rowCount });
-
-            return result;
-        } catch (error) {
-            // Запись нужна и для упавшего запроса, и для недоступной базы
-            this.#logQuery(sql, startedAt, { failed: true });
-
-            throw error;
-        }
+        return this.#pool.query<T>(sql, [...params]);
     }
 
     /**
@@ -74,15 +66,5 @@ export class Database {
      */
     async close(): Promise<void> {
         await this.#pool.end();
-    }
-
-    #logQuery(sql: string, startedAt: number, fields: LogFields): void {
-        // В строку идёт текст SQL, но не values: там оказываются пароли,
-        // хеши и токены.
-        this.#logger.debug({
-            sql,
-            durationMs: Math.round((performance.now() - startedAt) * 10) / 10,
-            ...fields,
-        }, 'sql');
     }
 }

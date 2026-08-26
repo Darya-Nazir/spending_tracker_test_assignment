@@ -63,7 +63,7 @@ describe('Logger', () => {
         const quiet = new MemorySink();
         const quietLogger = Logger.create(configFor({ LOG_LEVEL: 'info' }), quiet);
 
-        quietLogger.debug({ sql: 'select 1' }, 'query');
+        quietLogger.debug({ component: 'cache' }, 'details');
         quietLogger.info('kept');
 
         const quietRecords = await quiet.records();
@@ -73,13 +73,13 @@ describe('Logger', () => {
         const verbose = new MemorySink();
         const verboseLogger = Logger.create(configFor({ LOG_LEVEL: 'debug' }), verbose);
 
-        verboseLogger.debug({ sql: 'select 1' }, 'query');
+        verboseLogger.debug({ component: 'cache' }, 'details');
         verboseLogger.info('kept');
 
         const verboseRecords = await verbose.records();
         assert.equal(verboseRecords.length, 2, 'при LOG_LEVEL=debug та же запись проходит');
-        assert.equal(verboseRecords[0]?.msg, 'query');
-        assert.equal(verboseRecords[0]?.sql, 'select 1');
+        assert.equal(verboseRecords[0]?.msg, 'details');
+        assert.equal(verboseRecords[0]?.component, 'cache');
     });
 
     test('child logger adds its fields to every record it writes', async () => {

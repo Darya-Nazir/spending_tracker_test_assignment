@@ -37,3 +37,28 @@ docker compose logs -f postgres
 
 docker compose up -d 
 эта команда приводит состояние докера в соответствие с compose.yaml. 
+
+## SQL-логи PostgreSQL
+
+SQL-запросы логирует сам PostgreSQL. PostgreSQL пишет их в
+`stderr` контейнера, откуда их показывает Docker:
+
+```bash
+docker compose logs -f postgres
+```
+
+Режим задаётся в `.env` через `POSTGRES_LOG_MIN_DURATION_MS`:
+
+- `-1` — SQL-логи выключены (значение по умолчанию);
+- `0` — логируются все завершённые запросы;
+- `100` — логируются запросы длительностью от 100 мс.
+
+После изменения пересоздайте только контейнер PostgreSQL. Именованный volume с
+базами при этом сохраняется:
+
+```bash
+docker compose up -d --force-recreate postgres
+```
+
+Значения bind-параметров в SQL-логи не попадают.
+Docker хранит не более трёх файлов логов по 10 МБ для контейнера PostgreSQL.
