@@ -62,3 +62,28 @@ docker compose up -d --force-recreate postgres
 
 Значения bind-параметров в SQL-логи не попадают.
 Docker хранит не более трёх файлов логов по 10 МБ для контейнера PostgreSQL.
+
+## Миграции
+
+Миграции хранятся в `migrations` как обычные SQL-файлы. `node-pg-migrate`
+отвечает за порядок запуска, транзакции и таблицу применённых миграций.
+
+Создать следующую миграцию:
+
+```bash
+npm run db:migration:create -- migration-name
+```
+
+Команда создаёт файл с числовым префиксом и секциями `-- Up Migration` и
+`-- Down Migration`. Применить миграции или откатить последнюю:
+
+```bash
+npm run db:migrate
+npm run db:rollback
+```
+
+Для тестовой базы:
+
+```bash
+npm run db:migrate:test
+```

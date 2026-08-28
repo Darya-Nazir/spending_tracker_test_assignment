@@ -11,6 +11,7 @@
     "start": "node --env-file-if-exists=.env src/server.ts",
     "dev": "node --watch --env-file-if-exists=.env src/server.ts",
     "typecheck": "tsc --noEmit",
+    "db:migration:create": "node ./node_modules/node-pg-migrate/bin/node-pg-migrate.js create -m migrations --migration-file-language sql --migration-filename-format index",
     "db:migrate": "node --env-file-if-exists=.env ./node_modules/node-pg-migrate/bin/node-pg-migrate.js up -m migrations",
     "db:migrate:test": "node --env-file-if-exists=.env ./node_modules/node-pg-migrate/bin/node-pg-migrate.js up -m migrations -d TEST_DATABASE_URL",
     "db:rollback": "node --env-file-if-exists=.env ./node_modules/node-pg-migrate/bin/node-pg-migrate.js down -m migrations",
