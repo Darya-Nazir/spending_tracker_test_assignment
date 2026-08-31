@@ -1,34 +1,6 @@
 # server-v2
 
-## PostgreSQL для локальной разработки
-
-PostgreSQL работает в Docker Desktop, а не как системный сервис Ubuntu.
-Docker Desktop должен иметь включённую WSL Integration для Ubuntu.
-
-Контейнер создаёт две базы:
-
-- `spending_dev` — локальная разработка;
-- `spending_test` — интеграционные тесты и миграции тестовой базы.
-
-Обе доступны из WSL через `localhost:5432`. Данные хранятся в именованном
-Docker volume `spending_tracker_postgres_data` и сохраняются при остановке или
-пересоздании контейнера.
-
-Остановить PostgreSQL без удаления данных:
-
-```bash
-docker compose stop
-```
-
-Удалить контейнер и сеть, сохранив данные:
-
-```bash
-docker compose down
-```
-
-Команда `docker compose down -v` удаляет обе локальные базы без возможности
-восстановления из этого volume.
-
+## Docker
 
 Быстро проверить, что докер работает:
 docker compose ps
@@ -37,6 +9,18 @@ docker compose logs -f postgres
 
 docker compose up -d 
 эта команда приводит состояние докера в соответствие с compose.yaml. 
+
+## PostgreSQL
+
+Список всех таблиц
+docker compose exec postgres psql -U spending -d spending_test -c '\dt'
+
+Структура таблицы, например categories
+docker compose exec postgres psql -U spending -d spending_test -c '\d categories'
+
+Содержимое таблицы
+docker compose exec postgres psql -U spending -d spending_test -c 'select * from categories;'
+
 
 ## SQL-логи PostgreSQL
 
@@ -65,17 +49,7 @@ Docker хранит не более трёх файлов логов по 10 М�
 
 ## Миграции
 
-Миграции хранятся в `migrations` как обычные SQL-файлы. `node-pg-migrate`
-отвечает за порядок запуска, транзакции и таблицу применённых миграций.
-
-Создать следующую миграцию:
-
-```bash
-npm run db:migration:create -- migration-name
-```
-
-Команда создаёт файл с числовым префиксом и секциями `-- Up Migration` и
-`-- Down Migration`. Применить миграции или откатить последнюю:
+Применить миграции или откатить последнюю:
 
 ```bash
 npm run db:migrate
@@ -87,6 +61,10 @@ npm run db:rollback
 ```bash
 npm run db:migrate:test
 ```
+Посмотреть применённые миграции
+docker compose exec postgres psql -U spending -d spending_dev \
+  -c 'select * from pgmigrations order by id;'
+
 
 ## Тесты
 
@@ -99,5 +77,6 @@ npm test
 запустить конкретный тест
 Из папки server-v2:
 npm run db:migrate:test && node --test --test-concurrency=1 {ptest path}
+
 Если тестовая база уже мигрирована, достаточно:
 node --test test/integration/isolation.test.ts
