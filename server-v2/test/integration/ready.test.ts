@@ -2,11 +2,8 @@ import { describe, test } from 'node:test';
 import assert from 'node:assert/strict';
 import request from 'supertest';
 
-import { Config } from '../../src/config/config.ts';
-import { Logger } from '../../src/logging/logger.ts';
 import { AppFactory } from '../../src/http/app.ts';
-import { Database } from '../../src/db/database.ts';
-import { MemorySink } from '../helpers/memory-sink.ts';
+import { createTestDatabase, TEST_DATABASE_URL } from '../helpers/db.ts';
 
 /**
  *  /ready отвечает 200 только когда база отвечает на запрос
@@ -20,21 +17,13 @@ import { MemorySink } from '../helpers/memory-sink.ts';
 
 // Адрес spending_test, а не spending_dev: с этапа 7 весь прогон работает
 // с тестовой базой.
-const REACHABLE_URL = process.env.TEST_DATABASE_URL
-    ?? 'postgres://spending:spending@localhost:5432/spending_test';
+const REACHABLE_URL = TEST_DATABASE_URL;
 
 // Порт 1 не слушает никто: соединение отклоняется сразу, без ожидания таймаута.
 const UNREACHABLE_URL = 'postgres://spending:spending@127.0.0.1:1/spending_test';
 
 const buildApp = (databaseUrl: string) => {
-    const config = Config.load({
-        NODE_ENV: 'test',
-        PORT: '3000',
-        LOG_LEVEL: 'debug',
-        DATABASE_URL: databaseUrl,
-    });
-    const logger = Logger.create(config, new MemorySink());
-    const database = new Database(config, logger);
+    const { config, logger, database } = createTestDatabase(databaseUrl);
 
     return { app: new AppFactory(config, logger, database).build(), database };
 };

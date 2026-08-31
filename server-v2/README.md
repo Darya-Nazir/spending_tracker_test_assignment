@@ -87,3 +87,17 @@ npm run db:rollback
 ```bash
 npm run db:migrate:test
 ```
+
+## Тесты
+
+Полный прогон сам применяет миграции к `spending_test`, затем запускает файлы
+последовательно:
+
+```bash
+npm test
+```
+запустить конкретный тест
+Из папки server-v2:
+npm run db:migrate:test && node --test --test-concurrency=1 {ptest path}
+Если тестовая база уже мигрирована, достаточно:
+node --test test/integration/isolation.test.ts

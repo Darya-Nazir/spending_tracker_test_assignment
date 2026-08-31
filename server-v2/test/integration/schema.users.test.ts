@@ -1,25 +1,9 @@
 import assert from 'node:assert/strict';
-import { after, describe, test } from 'node:test';
+import { describe, test } from 'node:test';
 
-import { Config } from '../../src/config/config.ts';
-import { Database } from '../../src/db/database.ts';
-import { Logger } from '../../src/logging/logger.ts';
-import { MemorySink } from '../helpers/memory-sink.ts';
+import { useTestDatabase } from '../helpers/db.ts';
 
-const DATABASE_URL = process.env.TEST_DATABASE_URL
-    ?? 'postgres://spending:spending@localhost:5432/spending_test';
-
-const config = Config.load({
-    NODE_ENV: 'test',
-    PORT: '3000',
-    LOG_LEVEL: 'debug',
-    DATABASE_URL,
-});
-const database = new Database(config, Logger.create(config, new MemorySink()));
-
-after(async () => {
-    await database.close();
-});
+const { database } = useTestDatabase();
 
 type ColumnMetadata = {
     column_name: string;
@@ -71,18 +55,14 @@ describe('users schema', () => {
 
         const email = 'stage-6-default-balance@example.test';
 
-        try {
-            const { rows: insertedUserRows } = await database.query<{ initial_balance: number }>(
-                `insert into users (email, name, password_hash)
-                 values ($1, $2, $3)
-                 returning initial_balance`,
-                [email, 'Stage Six', 'not-a-real-password-hash'],
-            );
+        const { rows: insertedUserRows } = await database.query<{ initial_balance: number }>(
+            `insert into users (email, name, password_hash)
+             values ($1, $2, $3)
+             returning initial_balance`,
+            [email, 'Stage Six', 'not-a-real-password-hash'],
+        );
 
-            assert.equal(insertedUserRows[0]?.initial_balance, 0);
-        } finally {
-            await database.query('delete from users where email = $1', [email]);
-        }
+        assert.equal(insertedUserRows[0]?.initial_balance, 0);
     });
 
     test('email is unique regardless of letter case', async () => {
@@ -90,34 +70,27 @@ describe('users schema', () => {
         const firstEmail = 'Stage-6-Case@Example.test';
         const sameEmailInAnotherCase = 'stage-6-case@example.TEST';
 
-        try {
-            await database.query(
+        await database.query(
+            `insert into users (email, name, password_hash)
+             values ($1, $2, $3)`,
+            [firstEmail, 'First User', 'not-a-real-password-hash'],
+        );
+
+        await assert.rejects(
+            database.query(
                 `insert into users (email, name, password_hash)
                  values ($1, $2, $3)`,
-                [firstEmail, 'First User', 'not-a-real-password-hash'],
-            );
+                [sameEmailInAnotherCase, 'Second User', 'not-a-real-password-hash'],
+            ),
+            (error: unknown) => {
+                assert.equal(
+                    (error as { code?: string }).code,
+                    '23505',
+                    'PostgreSQL must reject the duplicate with unique_violation',
+                );
 
-            await assert.rejects(
-                database.query(
-                    `insert into users (email, name, password_hash)
-                     values ($1, $2, $3)`,
-                    [sameEmailInAnotherCase, 'Second User', 'not-a-real-password-hash'],
-                ),
-                (error: unknown) => {
-                    assert.equal(
-                        (error as { code?: string }).code,
-                        '23505',
-                        'PostgreSQL must reject the duplicate with unique_violation',
-                    );
-
-                    return true;
-                },
-            );
-        } finally {
-            await database.query(
-                'delete from users where lower(email) = lower($1)',
-                [firstEmail],
-            );
-        }
+                return true;
+            },
+        );
     });
 });

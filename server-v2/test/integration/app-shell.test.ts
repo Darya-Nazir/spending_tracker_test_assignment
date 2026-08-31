@@ -2,24 +2,9 @@ import { describe, test } from 'node:test';
 import assert from 'node:assert/strict';
 import request from 'supertest';
 
-import { Config } from '../../src/config/config.ts';
-import { Logger } from '../../src/logging/logger.ts';
-import { AppFactory } from '../../src/http/app.ts';
-import { Database } from '../../src/db/database.ts';
-import { MemorySink } from '../helpers/memory-sink.ts';
+import { useTestApp } from '../helpers/app.ts';
 
-/** Тесты этого файла к базе не ходят: адрес нужен только чтобы Config.load прошёл. */
-const DATABASE_URL = 'postgres://spending:spending@localhost:5432/spending_test';
-
-const buildApp = () => {
-    const config = Config.load({ NODE_ENV: 'test', PORT: '3000', LOG_LEVEL: 'debug', DATABASE_URL });
-    const logger = Logger.create(config, new MemorySink());
-
-    // Database нужен здесь только чтобы собрать AppFactory: /health в базу
-    // не ходит, а запрос на неизвестный путь до неё не доходит. Ни одного
-    // соединения не открывается, поэтому close() не вызывается.
-    return new AppFactory(config, logger, new Database(config, logger)).build();
-};
+const { app } = useTestApp();
 
 // Это название группы тестов. Речь про «каркас приложения»: 
 // собранный express-объект со всеми middleware и роутерами, но без запуска сервера: listen() не вызывается. 
@@ -30,7 +15,7 @@ describe('app shell', () => {
 
     test('GET /health answers 200 {status:"ok"} as JSON', async () => {
         // GET /health отвечает 200 {status:"ok"} в JSON
-        const response = await request(buildApp()).get('/health');
+        const response = await request(app).get('/health');
 
         assert.equal(response.status, 200);
         assert.equal(response.type, 'application/json');

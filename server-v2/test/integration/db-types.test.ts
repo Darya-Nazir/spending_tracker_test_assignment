@@ -1,28 +1,11 @@
-import { after, describe, test } from 'node:test';
+import { describe, test } from 'node:test';
 import assert from 'node:assert/strict';
 
-import { Config } from '../../src/config/config.ts';
-import { Logger } from '../../src/logging/logger.ts';
-import { Database } from '../../src/db/database.ts';
-import { MemorySink } from '../helpers/memory-sink.ts';
+import { useTestDatabase } from '../helpers/db.ts';
 
 process.env.TZ = 'Pacific/Auckland';
 
-const DATABASE_URL = process.env.TEST_DATABASE_URL
-    ?? 'postgres://spending:spending@localhost:5432/spending_test';
-
-const config = Config.load({
-    NODE_ENV: 'test',
-    PORT: '3000',
-    LOG_LEVEL: 'debug',
-    DATABASE_URL,
-});
-const database = new Database(config, Logger.create(config, new MemorySink()));
-
-// Пока соединения открыты, node:test не выходит после последнего теста.
-after(async () => {
-    await database.close();
-});
+const { database } = useTestDatabase();
 
 describe('pg type coercion', () => {
 
