@@ -12,6 +12,7 @@ const validEnv: Readonly<RawEnv> = Object.freeze({
     PORT: '3000',
     LOG_LEVEL: 'debug',
     DATABASE_URL: 'postgres://spending:spending@localhost:5432/spending_test',
+    BCRYPT_COST: '11',
 });
 
 const envWith = (patch: RawEnv): RawEnv => ({ ...validEnv, ...patch });
@@ -34,15 +35,17 @@ describe('Config', () => {
         assert.equal(config.port, 3000);
         assert.equal(config.logLevel, 'debug');
         assert.equal(config.databaseUrl, 'postgres://spending:spending@localhost:5432/spending_test');
+        assert.equal(config.bcryptCost, 11);
     });
 
     test('applies a default to every optional variable', () => {
         // подставляет значение по умолчанию каждой необязательной переменной
-        const config = Config.load(envWithout('NODE_ENV', 'PORT', 'LOG_LEVEL'));
+        const config = Config.load(envWithout('NODE_ENV', 'PORT', 'LOG_LEVEL', 'BCRYPT_COST'));
 
         assert.equal(config.nodeEnv, 'development');
         assert.equal(config.port, 3500);
         assert.equal(config.logLevel, 'info');
+        assert.equal(config.bcryptCost, 12);
     });
 
     test('fails when DATABASE_URL is missing or malformed', () => {

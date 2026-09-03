@@ -69,15 +69,14 @@ const envSchema = z.object({
     //     .regex(HTTP_URL_PATTERN, 'CORS_ORIGIN must be an http(s) URL, including the scheme')
     //     .default('http://localhost:9000'),
 
-    // --- этап 11 (сервис паролей) ---
     // Старый сервер вызывал bcrypt.genSalt(Number('example')), то есть genSalt(NaN).
     // Проверка на целое число не меньше 10 не даёт передать сюда NaN.
-    // BCRYPT_COST: z.coerce
-    //     .number()
-    //     .int('BCRYPT_COST must be a whole number')
-    //     .min(10, 'BCRYPT_COST must be at least 10')
-    //     .max(31, 'BCRYPT_COST must be at most 31')
-    //     .default(12),
+    BCRYPT_COST: z.coerce
+        .number()
+        .int('BCRYPT_COST must be a whole number')
+        .min(10, 'BCRYPT_COST must be at least 10')
+        .max(31, 'BCRYPT_COST must be at most 31')
+        .default(12),
 
     // --- этап 13 (минимальная аутентификация) ---
     // JWT_ACCESS_SECRET: z
@@ -131,8 +130,7 @@ export class Config {
     // --- этап 12а (CORS) ---
     // readonly corsOrigin: string;
 
-    // --- этап 11 ---
-    // readonly bcryptCost: number;
+    readonly bcryptCost: number;
 
     // --- этап 13 ---
     // readonly jwt: Readonly<{
@@ -185,8 +183,7 @@ export class Config {
         // --- этап 12а (CORS) ---
         // this.corsOrigin = values.CORS_ORIGIN;
 
-        // --- этап 11 ---
-        // this.bcryptCost = values.BCRYPT_COST;
+        this.bcryptCost = values.BCRYPT_COST;
 
         // --- этап 13 ---
         // this.jwt = Object.freeze({
