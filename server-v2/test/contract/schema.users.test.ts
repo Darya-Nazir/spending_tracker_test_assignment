@@ -13,6 +13,11 @@ type ColumnMetadata = {
     numeric_scale: number | null;
 };
 
+type IndexMetadata = {
+    indexname: string;
+    indexdef: string;
+};
+
 describe('users schema', () => {
     test('users has the required columns and initial_balance contract', async () => {
         // в users есть обязательные колонки и соблюдается контракт initial_balance
@@ -91,6 +96,29 @@ describe('users schema', () => {
 
                 return true;
             },
+        );
+    });
+
+    test('canonical email has a plain unique index and keeps the compatibility index', async () => {
+        // у канонического email есть обычный уникальный индекс и сохранён индекс совместимости
+        const { rows: indexRows } = await database.query<IndexMetadata>(
+            `select indexname, indexdef
+               from pg_indexes
+              where schemaname = 'public'
+                and tablename = 'users'
+                and indexname in ('users_email_unique', 'users_email_lower_unique')`,
+        );
+        const indexesByName = new Map(
+            indexRows.map((indexMetadata) => [indexMetadata.indexname, indexMetadata.indexdef]),
+        );
+
+        assert.match(
+            indexesByName.get('users_email_unique') ?? '',
+            /create unique index users_email_unique on public\.users using btree \(email\)/i,
+        );
+        assert.match(
+            indexesByName.get('users_email_lower_unique') ?? '',
+            /create unique index users_email_lower_unique on public\.users using btree \(lower\(email\)\)/i,
         );
     });
 });

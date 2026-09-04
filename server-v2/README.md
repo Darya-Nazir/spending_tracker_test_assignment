@@ -65,6 +65,8 @@ npm run db:migrate:test
 docker compose exec postgres psql -U spending -d spending_dev \
   -c 'select * from pgmigrations order by id;'
 
+docker compose exec postgres psql -U spending -d spending_test \
+  -c 'select * from pgmigrations order by id;'
 
 ## Тесты
 

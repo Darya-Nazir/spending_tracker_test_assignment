@@ -1,4 +1,5 @@
 import type { Database } from '../../db/database.ts';
+import type { NormalizedEmail } from './email.service.ts';
 
 type UserRow = {
     id: number;
@@ -25,11 +26,11 @@ export class UserRepository {
         this.#database = database;
     }
 
-    async findByEmail(email: string): Promise<User | null> {
+    async findByEmail(email: NormalizedEmail): Promise<User | null> {
         const { rows } = await this.#database.query<UserRow>(
             `select id, email, name, password_hash, initial_balance, created_at
                from users
-              where lower(email) = lower($1)`,
+              where email = $1`,
             [email],
         );
         const row = rows[0];
